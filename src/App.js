@@ -10,6 +10,7 @@ import {
 import { AvatarLoader } from "./loaders"
 import { useScreenshot } from "use-react-screenshot"
 import { language } from "./language"
+import { useInput } from "./hooks/useInput.js"
 
 function convertImgToBase64(url, callback, outputFormat) {
   var canvas = document.createElement("CANVAS")
@@ -55,10 +56,8 @@ const formatNumber = (number) => {
 function App() {
   const tweetRef = createRef(null)
   const downloadRef = createRef()
-  const [name, setName] = useState()
-  const [username, setUsername] = useState()
+  const [inputs, setInputs] = useInput({ name: "", username: "", tweet: "" })
   const [isVerified, setIsVerified] = useState(0)
-  const [tweet, setTweet] = useState()
   const [avatar, setAvatar] = useState()
   const [retweets, setRetweets] = useState(0)
   const [quoteTweets, setQuoteTweets] = useState(0)
@@ -67,6 +66,10 @@ function App() {
   const [image, takeScreenshot] = useScreenshot()
   const [langText, setLangText] = useState()
   const getImage = () => takeScreenshot(tweetRef.current)
+
+  const handleChange = (e) => {
+    setInputs({ ...inputs, [e.target.name]: e.target.value })
+  }
 
   useEffect(() => {
     setLangText(language[lang])
@@ -93,7 +96,7 @@ function App() {
 
   const fetchTwitterInfo = () => {
     fetch(
-      `https://typeahead-js-twitter-api-proxy.herokuapp.com/demo/search?q=${username}`
+      `https://typeahead-js-twitter-api-proxy.herokuapp.com/demo/search?q=${inputs.username}`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -104,9 +107,12 @@ function App() {
             setAvatar(base64Image)
           }
         )
-        setName(twitter.name)
-        setUsername(twitter.screen_name)
-        setTweet(twitter.status.text)
+        setInputs({
+          ...inputs,
+          name: twitter.name,
+          username: twitter.screen_name,
+          tweet: twitter.status.text,
+        })
         setRetweets(twitter.status.retweet_count)
         setLikes(twitter.status.favorite_count)
       })
@@ -122,8 +128,9 @@ function App() {
             <input
               type="text"
               className="input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              name="name"
+              value={inputs.name}
+              onChange={setInputs}
             />
           </li>
           <li>
@@ -131,15 +138,17 @@ function App() {
             <input
               type="text"
               className="input"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              name="username"
+              value={inputs.username}
+              onChange={setInputs}
             />
           </li>
           <li>
             <label htmlFor="">Tweet</label>
             <textarea
-              value={tweet}
-              onChange={(e) => setTweet(e.target.value)}
+              name="tweet"
+              value={inputs.tweet}
+              onChange={setInputs}
               className="textarea"
               maxLength="290"
             />
@@ -213,8 +222,9 @@ function App() {
         <div className="fetch-info">
           <input
             type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            name="username"
+            value={inputs.username}
+            onChange={handleChange}
             placeholder="Twitter Kullanıcı Adı"
           />
           <button onClick={fetchTwitterInfo}>{langText?.fetch}</button>
@@ -224,17 +234,19 @@ function App() {
             {(avatar && <img src={avatar} alt="avatar" />) || <AvatarLoader />}
             <div className="tweet-author-text">
               <div className="name">
-                {name || "Adın"}{" "}
+                {inputs.name || "Adın"}{" "}
                 {isVerified == 1 && <VerifiedIcon width="19" height="19" />}
               </div>
-              <div className="username">@{username || "Kullanıcı adı"}</div>
+              <div className="username">
+                @{inputs.username || "Kullanıcı adı"}
+              </div>
             </div>
           </div>
           <div className="tweet-content">
             <p
               dangerouslySetInnerHTML={{
                 __html:
-                  (tweet && tweetFormat(tweet)) ||
+                  (inputs.tweet && tweetFormat(inputs.tweet)) ||
                   "Bu alana örnek tweet gelecek",
               }}
             />
